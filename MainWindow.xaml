@@ -1,0 +1,181 @@
+﻿<Window x:Class="WinfxkVoiceHub.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Winfxk Voice Hub - 智能有声书阅读器" Height="850" Width="1100" 
+        Background="#F0F2F5" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#DCDFE6"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#ECF5FF"/>
+                    <Setter Property="BorderBrush" Value="#C6E2FF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- 1. 核心配置 -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2. 进度与章节控制 -->
+            <RowDefinition Height="*"/>
+            <!-- 3. 交互区 -->
+            <RowDefinition Height="180"/>
+            <!-- 4. 日志区 -->
+        </Grid.RowDefinitions>
+
+        <!-- 1. 核心配置面板 (已移除保存按钮，改为实时保存) -->
+        <Border Grid.Row="0" Background="White" CornerRadius="8" Padding="20" Margin="0,0,0,10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" Color="#000000" Opacity="0.05" ShadowDepth="2"/>
+            </Border.Effect>
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 设备选择 -->
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="音频链路设置" FontWeight="Bold" Foreground="#2C3E50" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <RadioButton x:Name="RadioMic" Content="麦克风" IsChecked="True" Margin="0,0,10,0"/>
+                            <RadioButton x:Name="RadioSystem" Content="系统声卡"/>
+                        </StackPanel>
+                        <ComboBox x:Name="InputDeviceCombo" Height="30" Margin="0,0,0,5" SelectionChanged="OnSettingChanged"/>
+                        <ComboBox x:Name="OutputDeviceCombo" Height="30" SelectionChanged="OnSettingChanged"/>
+                    </StackPanel>
+
+                    <Separator Grid.Column="1" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="25,0" Width="1"/>
+
+                    <!-- 语速调节 -->
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="语音引擎控制" FontWeight="Bold" Foreground="#2C3E50" Margin="0,0,0,10"/>
+                        <DockPanel LastChildFill="True" Margin="0,0,0,10">
+                            <TextBlock Text="朗读语速" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBlock Text="{Binding ElementName=SliderSpeed, Path=Value, StringFormat={}{0:0}}" DockPanel.Dock="Right" Foreground="#409EFF" Width="25" TextAlignment="Right" Margin="5,0,0,0"/>
+                            <Slider x:Name="SliderSpeed" Minimum="-10" Maximum="10" Value="0" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="OnSettingChanged"/>
+                        </DockPanel>
+                        <TextBlock Text="* 所有修改均已实时保存" FontSize="11" Foreground="#909399" HorizontalAlignment="Right" FontStyle="Italic"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- 2. 进度条与章节控制 -->
+        <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,10">
+            <StackPanel>
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="TxtProgressLabel" Text="阅读进度: 0/0" VerticalAlignment="Center" Foreground="#909399" FontSize="12" Width="120"/>
+                    <TextBlock x:Name="TxtNowReading" Grid.Column="1" Text="等待朗读任务开始..." HorizontalAlignment="Center" FontWeight="SemiBold" Foreground="#67C23A" FontSize="14" TextTrimming="CharacterEllipsis" Margin="15,0"/>
+                    <Button Grid.Column="2" x:Name="BtnOpenChapterSelector" Content="📑 浏览目录" Click="BtnOpenChapterSelector_Click" 
+                            Padding="10,4" FontSize="12" BorderBrush="#409EFF" Foreground="#409EFF"/>
+                </Grid>
+                <Slider x:Name="SliderProgress" Minimum="0" Maximum="100" Value="0" 
+                        TickPlacement="None" IsMoveToPointEnabled="True"
+                        PreviewMouseLeftButtonUp="SliderProgress_PreviewMouseLeftButtonUp"
+                        Height="20" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 3. 中部交互区 -->
+        <Grid Grid.Row="2" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="240"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Background="White" CornerRadius="8" Padding="15">
+                <TextBox x:Name="TextInputField" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" 
+                         TextWrapping="Wrap" Padding="10" FontSize="15" BorderThickness="1" 
+                         BorderBrush="#EBEEF5" FontFamily="Microsoft YaHei"
+                         SelectionBrush="#409EFF" SelectionOpacity="0.3"/>
+            </Border>
+
+            <StackPanel Grid.Column="1" Margin="15,0,0,0">
+                <Border Background="White" CornerRadius="8" Padding="15">
+                    <StackPanel>
+                        <TextBlock Text="控制面板" FontWeight="Bold" Margin="0,0,0,15"/>
+                        <Button x:Name="BtnImportTxt" Content="📚 导入本地书籍" Height="45" Margin="0,0,0,12" Click="BtnImportTxt_Click" Background="#E6A23C" Foreground="White" BorderThickness="0"/>
+                        <Button x:Name="BtnStartRead" Content="▶ 开始全文朗读" Height="50" Margin="0,0,0,12" Click="BtnStartRead_Click" Background="#67C23A" Foreground="White" BorderThickness="0"/>
+                        <Button x:Name="BtnListen" Content="🎙️ 实时对话模式" Height="50" Margin="0,0,0,15" Click="BtnToggleListen_Click" Background="#409EFF" Foreground="White" BorderThickness="0"/>
+
+                        <Separator Background="#F2F6FC" Margin="0,0,0,15"/>
+                        <TextBlock Text="💡 状态：" FontWeight="SemiBold" FontSize="11" Margin="0,0,0,5"/>
+                        <TextBlock x:Name="TxtFileInfo" Text="未加载文件" FontSize="11" Foreground="#909399" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- 4. 日志区 -->
+        <Border Grid.Row="3" Background="#2B2D30" CornerRadius="8" Padding="5">
+            <TextBox x:Name="LogConsole" IsReadOnly="True" Background="Transparent" Foreground="#6A9955" FontFamily="Consolas" FontSize="12" VerticalScrollBarVisibility="Auto" BorderThickness="0" Padding="10"/>
+        </Border>
+
+        <!-- 5. 全局遮罩：解析等待层 -->
+        <Grid x:Name="LoadingOverlay" Grid.RowSpan="4" Background="#AAFFFFFF" Visibility="Collapsed">
+            <Border Background="White" CornerRadius="12" Width="350" Height="180" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="20" Color="Black" Opacity="0.1"/>
+                </Border.Effect>
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <ProgressBar x:Name="ParseProgressBar" Width="250" Height="10" Foreground="#409EFF" Background="#EBEEF5" BorderThickness="0" Margin="0,0,0,20"/>
+                    <TextBlock x:Name="TxtParseStatus" Text="正在解析..." HorizontalAlignment="Center" Foreground="#606266" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="TxtParseProgress" Text="0%" HorizontalAlignment="Center" Foreground="#909399" FontSize="12" Margin="0,10,0,0"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- 6. 全局遮罩：虚拟化章节选择器 -->
+        <Grid x:Name="ChapterOverlay" Grid.RowSpan="4" Background="#66000000" Visibility="Collapsed">
+            <Border Background="White" CornerRadius="12" Width="500" MaxHeight="600" Margin="50" VerticalAlignment="Center">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="目录浏览" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
+                    <TextBox x:Name="TxtChapterSearch" Grid.Row="1" Height="35" Margin="0,0,0,10" 
+                             VerticalContentAlignment="Center" Padding="10,0" Tag="搜索章节..."
+                             TextChanged="TxtChapterSearch_TextChanged"/>
+
+                    <ListBox x:Name="ChapterListBox" Grid.Row="2" BorderThickness="0" 
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             VirtualizingStackPanel.IsVirtualizing="True"
+                             VirtualizingStackPanel.VirtualizationMode="Recycling"
+                             SelectionChanged="ChapterListBox_SelectionChanged">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderThickness="0,0,0,1" BorderBrush="#F2F6FC" Padding="10,8">
+                                    <TextBlock Text="{Binding FullTitle}" FontSize="14" Foreground="#303133"/>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <Button Grid.Row="3" Content="关闭目录" Click="BtnCloseChapter_Click" 
+                            Margin="0,15,0,0" Background="#909399" Foreground="White" BorderThickness="0"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
