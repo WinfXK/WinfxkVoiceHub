@@ -12,7 +12,8 @@
     <ApplicationIcon>保龄球.ico</ApplicationIcon>
     <ImplicitUsings>disable</ImplicitUsings>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-  </PropertyGroup>
+    <UseWindowsForms>true</UseWindowsForms>
+   </PropertyGroup>
 
   <ItemGroup>
     <Resource Include="保龄球.ico" />
